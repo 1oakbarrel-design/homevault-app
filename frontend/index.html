@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Scan everything you own. AI builds your home inventory for insurance claims.">
+<title>HomeVault — Home Inventory Scanner</title>
+<meta name="theme-color" content="#f97316">
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HomeVault">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080C08;--s1:#0E140E;--s2:#141E14;--card:#182018;
+  --border:#1E2E1E;--border2:#2A3E2A;--text:#EEF5EE;--muted:#6A806A;
+  --accent:#4ADE80;--accent2:#86EFAC;
+  --gold:#C9A84C;--goldbg:#120E00;
+  --danger:#EF4444;--dbg:#120505;--dbr:#3A0E0E;
+  --r:16px;--rs:10px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.auth-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:24px;max-width:400px;margin:0 auto}
+.auth-logo{font-size:28px;font-weight:800;color:var(--accent);margin-bottom:4px;letter-spacing:-1px}
+.auth-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:24px;text-align:center;line-height:1.6}
+.input-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.8px;color:var(--muted);display:block;margin-bottom:5px}
+.input-f{width:100%;background:var(--s1);border:0.5px solid var(--border2);border-radius:var(--rs);padding:12px 13px;font-family:'Syne',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .2s;margin-bottom:12px}
+.input-f:focus{border-color:var(--accent)}
+.btn-primary{width:100%;padding:13px;background:var(--accent);color:#050505;border:none;border-radius:var(--rs);font-family:'Syne',sans-serif;font-size:14px;font-weight:800;cursor:pointer}
+.btn-secondary{width:100%;padding:11px;background:transparent;border:0.5px solid var(--border2);border-radius:var(--rs);font-family:'Syne',sans-serif;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;margin-top:8px}
+.auth-err{background:var(--dbg);border:0.5px solid var(--dbr);border-radius:8px;padding:10px 12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--danger);margin-bottom:10px;display:none}
+.auth-switch{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-align:center;margin-top:14px;cursor:pointer}
+.auth-switch span{color:var(--accent)}
+#appShell{display:none;flex-direction:column;height:100dvh}
+.hdr{background:var(--s1);border-bottom:0.5px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.hdr-logo{font-size:18px;font-weight:800;color:var(--accent);letter-spacing:-.5px}
+.content{flex:1;overflow-y:auto;padding:16px;padding-bottom:80px}
+.tabs{background:var(--s1);border-top:0.5px solid var(--border);display:flex;position:fixed;bottom:0;left:0;right:0;z-index:10;padding-bottom:env(safe-area-inset-bottom)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;gap:3px;border:none;background:none;cursor:pointer;color:var(--muted);transition:color .2s}
+.tab.active{color:var(--accent)}
+.tab-icon{font-size:20px}
+.tab-lbl{font-family:'DM Mono',monospace;font-size:9px}
+.section-mono{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--accent);margin-bottom:8px}
+.section-title{font-size:15px;font-weight:800;margin-bottom:10px;letter-spacing:-.3px}
+.card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--rs);padding:14px;margin-bottom:8px}
+.room-card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--rs);padding:14px;margin-bottom:8px;cursor:pointer;transition:border-color .2s}
+.room-card:hover,.room-card.active-room{border-color:var(--accent);background:rgba(74,222,128,.03)}
+.item-card{background:var(--s2);border:0.5px solid var(--border);border-radius:var(--rs);padding:12px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.item-icon{font-size:20px;flex-shrink:0}
+.item-body{flex:1}
+.item-name{font-size:13px;font-weight:700;margin-bottom:2px}
+.item-detail{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)}
+.item-value{font-size:14px;font-weight:800;color:var(--accent);flex-shrink:0}
+.scan-zone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:28px 20px;text-align:center;cursor:pointer;transition:all .3s;background:linear-gradient(135deg,var(--s1),var(--bg))}
+.scan-zone:hover{border-color:var(--accent);box-shadow:0 0 20px rgba(74,222,128,.08)}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.stat-card{background:var(--card);border:0.5px solid var(--border);border-radius:var(--rs);padding:14px;text-align:center}
+.stat-num{font-size:24px;font-weight:800;letter-spacing:-.5px;color:var(--accent)}
+.stat-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:2px}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--s1);border-top:1px solid var(--border2);border-radius:16px 16px 0 0;padding:20px 18px 48px;width:100%;max-width:480px;max-height:88dvh;overflow-y:auto}
+.modal-handle{width:34px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--s1);border:0.5px solid var(--border2);border-radius:99px;padding:9px 18px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text);z-index:200;opacity:0;transition:opacity .3s;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1}
+.loading{text-align:center;padding:30px;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+.spinner{width:22px;height:22px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:32px 16px}
+.empty-icon{font-size:40px;margin-bottom:10px;opacity:.25}
+.empty-title{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:6px}
+.empty-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:14px}
+</style>
+</head>
+<body>
+
+<div id="authScreen" style="display:flex">
+  <div class="auth-screen">
+    <div class="auth-logo">🏠 HomeVault</div>
+    <div class="auth-sub">Scan everything you own. AI builds your home inventory for insurance claims before disaster strikes.</div>
+    <div id="authErr" class="auth-err"></div>
+    <div id="loginForm">
+      <label class="input-lbl">EMAIL</label>
+      <input class="input-f" type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+      <label class="input-lbl">PASSWORD</label>
+      <input class="input-f" type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+      <button class="btn-primary" onclick="login()">Sign In</button>
+      <div class="auth-switch" onclick="showSignup()">No account? <span>Create one free →</span></div>
+    </div>
+    <div id="signupForm" style="display:none;width:100%">
+      <label class="input-lbl">YOUR NAME</label>
+      <input class="input-f" type="text" id="signupName" placeholder="Your name">
+      <label class="input-lbl">EMAIL</label>
+      <input class="input-f" type="email" id="signupEmail" placeholder="you@example.com">
+      <label class="input-lbl">PASSWORD</label>
+      <input class="input-f" type="password" id="signupPassword" placeholder="Min 8 characters">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;line-height:1.5"><input type="checkbox" id="gdprCheck" style="margin-right:6px">I agree to the <a href="/privacy" style="color:var(--accent)">Privacy Policy</a></div>
+      <button class="btn-primary" onclick="signup()">Create Free Account</button>
+      <div class="auth-switch" onclick="showLogin()">Already have an account? <span>Sign in →</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="appShell">
+  <div class="hdr">
+    <div class="hdr-logo">🏠 HomeVault</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="proPill" style="display:none;background:var(--accent);color:#050505;border-radius:99px;padding:3px 9px;font-family:'DM Mono',monospace;font-size:9px;font-weight:700">PRO</span>
+      <button onclick="switchTab('account')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px">👤</button>
+    </div>
+  </div>
+  <div class="content" id="mainContent">
+    <div id="scanTab">
+      <div id="roomSelector" style="margin-bottom:12px"></div>
+      <div class="scan-zone" onclick="triggerScan()">
+        <div style="font-size:48px;margin-bottom:10px;opacity:.4">📷</div>
+        <div style="font-size:17px;font-weight:700;margin-bottom:6px">Scan an item</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;line-height:1.6">Point camera at any item.<br>AI identifies it and estimates its value.</div>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button onclick="event.stopPropagation();triggerCamera()" style="background:var(--s2);border:0.5px solid var(--border2);border-radius:var(--rs);padding:9px 16px;font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer">📷 Camera</button>
+          <button onclick="event.stopPropagation();triggerFile()" style="background:var(--s2);border:0.5px solid var(--border2);border-radius:var(--rs);padding:9px 16px;font-family:'Syne',sans-serif;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer">📁 Upload</button>
+        </div>
+      </div>
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(this.files[0])">
+      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(this.files[0])">
+      <div id="scanLoading" style="display:none" class="loading"><div class="spinner"></div>Identifying item…</div>
+      <div id="scanResult" style="display:none;margin-top:16px"></div>
+    </div>
+    <div id="inventoryTab" style="display:none"><div id="inventoryContent"></div></div>
+    <div id="summaryTab" style="display:none"><div id="summaryContent"></div></div>
+    <div id="accountTab" style="display:none"><div id="accountContent"></div></div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" id="tab-scan" onclick="switchTab('scan')"><span class="tab-icon">📷</span><span class="tab-lbl">Scan</span></button>
+    <button class="tab" id="tab-inventory" onclick="switchTab('inventory')"><span class="tab-icon">🏠</span><span class="tab-lbl">Rooms</span></button>
+    <button class="tab" id="tab-summary" onclick="switchTab('summary')"><span class="tab-icon">📊</span><span class="tab-lbl">Summary</span></button>
+    <button class="tab" id="tab-account" onclick="switchTab('account')"><span class="tab-icon">👤</span><span class="tab-lbl">Account</span></button>
+  </div>
+</div>
+
+<!-- Add room modal -->
+<div class="modal-bg" id="addRoomModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="section-title">Add a room</div>
+    <label class="input-lbl">ROOM NAME</label>
+    <input class="input-f" id="roomName" placeholder="e.g. Living Room, Master Bedroom">
+    <label class="input-lbl">ICON</label>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px" id="iconPicker">
+      ${[['🛋','living-room'],['🛏','bedroom'],['🍳','kitchen'],['🚿','bathroom'],['🚗','garage'],['💻','office'],['📦','basement'],['🏠','home']].map(([e,v])=>`<button onclick="selectIcon('${v}',this)" style="background:var(--s2);border:0.5px solid var(--border2);border-radius:var(--rs);padding:12px;font-size:22px;cursor:pointer;transition:all .2s">${e}</button>`).join('')}
+    </div>
+    <button class="btn-primary" onclick="addRoom()">Add Room ✓</button>
+    <button class="btn-secondary" onclick="document.getElementById('addRoomModal').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<!-- Pro modal -->
+<div class="modal-bg" id="proModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="font-size:20px;font-weight:800;margin-bottom:6px">HomeVault Pro 🏠</div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;line-height:1.6">Unlimited items, photo storage, and one-click insurance reports.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div onclick="selectProPlan('monthly')" id="pm-monthly" style="background:var(--card);border:0.5px solid var(--border);border-radius:var(--rs);padding:13px;text-align:center;cursor:pointer"><div style="font-size:18px;font-weight:800">$2.99</div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">per month</div></div>
+      <div onclick="selectProPlan('yearly')" id="pm-yearly" style="background:var(--card);border:1px solid var(--accent);border-radius:var(--rs);padding:13px;text-align:center;cursor:pointer;position:relative"><div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--accent);color:#050505;font-family:'DM Mono',monospace;font-size:8px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap">SAVE 44%</div><div style="font-size:18px;font-weight:800">$19.99</div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)">per year</div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--accent)">$1.67/mo</div></div>
+    </div>
+    <div style="margin-bottom:14px">${['Unlimited item scanning','Photo stored per item','CSV insurance report export','Value estimates by room','Serial number tracking','7-day free trial'].map(f=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--border);font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"><span style="color:var(--accent)">✓</span>${f}</div>`).join('')}</div>
+    <button class="btn-primary" id="proCheckoutBtn" onclick="startProCheckout()">🏠 Start Free 7-Day Trial</button>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);text-align:center;margin-top:8px">Cancel anytime · No charge during trial</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = 'https://homevault-backend-production.up.railway.app';
+let token = localStorage.getItem('hv_token');
+let refreshToken = localStorage.getItem('hv_refresh');
+let currentUser = null;
+let inventory = { rooms: [], total_value: 0, total_items: 0 };
+let activeRoomId = localStorage.getItem('hv_room');
+let selectedIcon = 'home';
+let selectedProPlan = 'yearly';
+
+async function api(path, opts={}) {
+  const res = await fetch(API_BASE+path, { ...opts, headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{}),...(opts.headers||{})} });
+  const data = await res.json().catch(()=>({}));
+  if (res.status===401 && data.code==='TOKEN_EXPIRED' && refreshToken) {
+    try {
+      const r = await fetch(API_BASE+'/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refreshToken})});
+      if (r.ok) { const d=await r.json(); token=d.token; refreshToken=d.refresh_token; localStorage.setItem('hv_token',token); localStorage.setItem('hv_refresh',refreshToken); return api(path,opts); }
+    } catch(e) {}
+    logout(); throw new Error('Session expired');
+  }
+  if (!res.ok) throw data;
+  return data;
+}
+
+function showToast(msg,dur=3000){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+function showAuthErr(msg){const e=document.getElementById('authErr');e.textContent=msg;e.style.display='block';}
+function clearAuthErr(){document.getElementById('authErr').style.display='none';}
+function showLogin(){document.getElementById('loginForm').style.display='block';document.getElementById('signupForm').style.display='none';clearAuthErr();}
+function showSignup(){document.getElementById('loginForm').style.display='none';document.getElementById('signupForm').style.display='block';clearAuthErr();}
+
+async function login(){
+  clearAuthErr();
+  const email=document.getElementById('loginEmail').value,password=document.getElementById('loginPassword').value;
+  if(!email||!password)return showAuthErr('Email and password required');
+  try{const d=await api('/auth/login',{method:'POST',body:JSON.stringify({email,password})});storeAuth(d);showApp(d.user);}
+  catch(e){showAuthErr(e.error||'Login failed');}
+}
+
+async function signup(){
+  clearAuthErr();
+  const name=document.getElementById('signupName').value,email=document.getElementById('signupEmail').value,password=document.getElementById('signupPassword').value,gdpr=document.getElementById('gdprCheck').checked;
+  if(!email||!password)return showAuthErr('Email and password required');
+  if(!gdpr)return showAuthErr('Please agree to the Privacy Policy');
+  try{const d=await api('/auth/signup',{method:'POST',body:JSON.stringify({name,email,password,gdpr_consent:true})});storeAuth(d);showApp(d.user);}
+  catch(e){showAuthErr(e.error||'Signup failed');}
+}
+
+function storeAuth(d){token=d.token;refreshToken=d.refresh_token;localStorage.setItem('hv_token',token);localStorage.setItem('hv_refresh',refreshToken);currentUser=d.user;}
+
+function logout(){
+  localStorage.removeItem('hv_token');localStorage.removeItem('hv_refresh');localStorage.removeItem('hv_room');
+  token=null;refreshToken=null;currentUser=null;
+  document.getElementById('authScreen').style.display='flex';
+  document.getElementById('appShell').style.display='none';
+}
+
+async function showApp(user){
+  currentUser=user;
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('appShell').style.display='flex';
+  document.getElementById('proPill').style.display=user.is_pro?'block':'none';
+  await loadInventory();
+  renderRoomSelector();
+}
+
+function switchTab(tab){
+  ['scan','inventory','summary','account'].forEach(t=>{document.getElementById(t+'Tab').style.display=t===tab?'block':'none';document.getElementById('tab-'+t).classList.toggle('active',t===tab);});
+  if(tab==='inventory')renderInventory();
+  if(tab==='summary')renderSummary();
+  if(tab==='account')renderAccount();
+  if(navigator.vibrate)navigator.vibrate(8);
+}
+
+async function loadInventory(){
+  try{const d=await api('/inventory');inventory=d;if(!activeRoomId&&d.rooms.length)activeRoomId=d.rooms[0].id;}
+  catch(e){}
+}
+
+function renderRoomSelector(){
+  const el=document.getElementById('roomSelector');
+  if(!inventory.rooms.length){
+    el.innerHTML=`<div class="card"><div style="font-size:13px;font-weight:700;margin-bottom:6px">Create a room first</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:10px">Organise your inventory room by room.</div><button class="btn-primary" style="font-size:12px;padding:10px" onclick="document.getElementById('addRoomModal').classList.add('open')">+ Add Room</button></div>`;
+    return;
+  }
+  el.innerHTML=`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">${inventory.rooms.map(r=>`<button onclick="setActiveRoom('${r.id}')" style="background:${r.id===activeRoomId?'var(--accent)':'var(--card)'};color:${r.id===activeRoomId?'#050505':'var(--muted)'};border:0.5px solid var(--border);border-radius:99px;padding:6px 14px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">${r.name} <span style="opacity:.7">(${r.items?.length||0})</span></button>`).join('')}<button onclick="document.getElementById('addRoomModal').classList.add('open')" style="background:var(--s2);border:0.5px solid var(--border2);border-radius:99px;padding:6px 14px;font-family:'Syne',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap;flex-shrink:0">+ Room</button></div>`;
+}
+
+function setActiveRoom(id){activeRoomId=id;localStorage.setItem('hv_room',id);renderRoomSelector();}
+
+function triggerCamera(){document.getElementById('cameraInput').click();}
+function triggerFile(){document.getElementById('fileInput').click();}
+function triggerScan(){if(!activeRoomId)return showToast('Add a room first');document.getElementById('fileInput').click();}
+
+function handleFile(file){
+  if(!file||!file.type.startsWith('image/'))return showToast('Please select an image');
+  const reader=new FileReader();
+  reader.onload=e=>{scanItem(e.target.result.split(',')[1],file.type);};
+  reader.readAsDataURL(file);
+}
+
+async function scanItem(base64,mimeType){
+  if(!activeRoomId){showToast('Select a room first');return;}
+  document.getElementById('scanResult').style.display='none';
+  document.getElementById('scanLoading').style.display='block';
+  if(navigator.vibrate)navigator.vibrate(8);
+  try{
+    const d=await api('/scan/item',{method:'POST',body:JSON.stringify({image_base64:base64,mime_type:mimeType,room_id:activeRoomId})});
+    document.getElementById('scanLoading').style.display='none';
+    renderScanResult(d);
+    await loadInventory();renderRoomSelector();
+    if(navigator.vibrate)navigator.vibrate([10,40,10]);
+  }catch(e){
+    document.getElementById('scanLoading').style.display='none';
+    if(e.code==='LIMIT_REACHED'){
+      document.getElementById('proModal').classList.add('open');
+      showToast('10 item limit reached — upgrade to inventory your whole home');
+    }
+    else showToast('⚠ '+(e.error||'Scan failed'));
+  }
+}
+
+function renderScanResult(d){
+  document.getElementById('scanResult').style.display='block';
+  document.getElementById('scanResult').innerHTML=`
+    <div class="card">
+      <div style="font-size:20px;font-weight:800;margin-bottom:4px">${d.name||'Item'}</div>
+      ${d.brand?`<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:2px">${d.brand}${d.model?' · '+d.model:''}</div>`:''}
+      <div style="font-size:28px;font-weight:800;color:var(--accent);margin:8px 0">$${(d.estimated_value||0).toLocaleString()}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:8px">Estimated current value · ${d.condition||'Good'} condition</div>
+      ${d.serial_number?`<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px">S/N: ${d.serial_number}</div>`:''}
+      ${d.category?`<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px">Category: ${d.category}</div>`:''}
+      ${d.notes?`<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:4px;line-height:1.5">${d.notes}</div>`:''}
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px">Saved to: ${d.room}</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-primary" style="flex:1;font-size:12px;padding:10px" onclick="switchTab('inventory');renderInventory()">✓ View Inventory</button>
+      <button class="btn-secondary" style="flex:1;font-size:12px;padding:10px;margin:0" onclick="document.getElementById('scanResult').style.display='none'">Scan Another</button>
+    </div>`;
+}
+
+function renderInventory(){
+  const el=document.getElementById('inventoryContent');
+  if(!inventory.rooms.length){el.innerHTML='<div class="empty"><div class="empty-icon">🏠</div><div class="empty-title">No rooms yet</div><div class="empty-sub">Add a room and start scanning items.</div><button class="btn-primary" style="font-size:12px;padding:10px" onclick="document.getElementById(\'addRoomModal\').classList.add(\'open\')">+ Add Room</button></div>';return;}
+  el.innerHTML=inventory.rooms.map(r=>`
+    <div class="section-mono">${r.name.toUpperCase()} · ${r.items?.length||0} ITEMS</div>
+    ${(r.items||[]).length?r.items.map(i=>`<div class="item-card"><div class="item-icon">📦</div><div class="item-body"><div class="item-name">${i.name}</div><div class="item-detail">${i.brand||''} ${i.model?'· '+i.model:''} ${i.condition?'· '+i.condition:''}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><div class="item-value">$${(i.estimated_value||0).toLocaleString()}</div><button onclick="deleteItem('${i.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px">✕</button></div></div>`).join('') : '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);padding:10px 0;margin-bottom:10px">No items yet — scan something!</div>'}
+  `).join('');
+}
+
+function renderSummary(){
+  const el=document.getElementById('summaryContent');
+  const cats=inventory.by_category||[];
+  const maxVal=Math.max(...cats.map(c=>c.total),1);
+  el.innerHTML=`
+    <div class="section-mono">TOTAL INVENTORY VALUE</div>
+    <div style="font-size:40px;font-weight:800;color:var(--accent);letter-spacing:-1px;margin-bottom:4px">$${(inventory.total_value||0).toLocaleString()}</div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:18px">${inventory.total_items||0} items across ${inventory.rooms?.length||0} rooms</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num">${inventory.rooms?.length||0}</div><div class="stat-lbl">Rooms</div></div>
+      <div class="stat-card"><div class="stat-num">${inventory.total_items||0}</div><div class="stat-lbl">Items</div></div>
+    </div>
+    <div class="section-mono">BY CATEGORY</div>
+    ${cats.map(c=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border)"><div style="width:110px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.category}</div><div style="flex:1;height:4px;background:var(--s2);border-radius:2px"><div style="height:4px;border-radius:2px;background:var(--accent);width:${Math.round((c.total/maxVal)*100)}%"></div></div><div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);min-width:70px;text-align:right">$${Math.round(c.total).toLocaleString()}</div></div>`).join('')||'<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">Scan items to see breakdown.</div>'}
+    <div style="margin-top:16px">
+      ${!currentUser?.is_pro?`<button class="btn-primary" onclick="document.getElementById('proModal').classList.add('open')">⭐ Export Insurance Report (Pro)</button>`:`<button class="btn-primary" onclick="exportCSV()">📥 Export Insurance Report</button>`}
+    </div>`;
+}
+
+function renderAccount(){
+  document.getElementById('accountContent').innerHTML=`
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:3px">${currentUser?.name||currentUser?.email}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:3px">${currentUser?.email}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:${currentUser?.is_pro?'var(--accent)':'var(--muted)'}">${currentUser?.is_pro?'Pro':'Free — up to 25 items'}</div>
+    </div>
+    ${!currentUser?.is_pro?`<button class="btn-primary" onclick="document.getElementById('proModal').classList.add('open')" style="margin-bottom:8px">🏠 Upgrade to Pro</button>`:`<button class="btn-secondary" onclick="manageSub()" style="margin-bottom:8px">Manage Subscription</button>`}
+    <button class="btn-secondary" onclick="logout()">Sign Out</button>`;
+}
+
+function selectIcon(val, btn){
+  selectedIcon=val;
+  document.querySelectorAll('#iconPicker button').forEach(b=>b.style.borderColor='var(--border2)');
+  btn.style.borderColor='var(--accent)';
+}
+
+async function addRoom(){
+  const name=document.getElementById('roomName').value.trim();
+  if(!name)return showToast('Room name required');
+  try{
+    await api('/inventory/rooms',{method:'POST',body:JSON.stringify({name,icon:selectedIcon})});
+    document.getElementById('addRoomModal').classList.remove('open');
+    document.getElementById('roomName').value='';
+    await loadInventory();renderRoomSelector();
+    showToast('✓ '+name+' added');
+  }catch(e){showToast('⚠ '+(e.error||'Failed'));}
+}
+
+async function deleteItem(id){
+  if(!confirm('Remove this item?'))return;
+  try{await api('/inventory/items/'+id,{method:'DELETE'});await loadInventory();renderInventory();showToast('✓ Removed');}
+  catch(e){showToast('Failed');}
+}
+
+async function exportCSV(){
+  try{
+    const res=await fetch(API_BASE+'/inventory/export',{headers:{Authorization:'Bearer '+token}});
+    const blob=await res.blob();
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='homevault-inventory.csv';a.click();
+    showToast('✓ Report downloaded');
+  }catch(e){showToast('Export failed');}
+}
+
+async function manageSub(){
+  try{const d=await api('/stripe/portal',{method:'POST'});window.location.href=d.portal_url;}
+  catch(e){showToast('Could not open billing portal');}
+}
+
+function selectProPlan(plan){
+  selectedProPlan=plan;
+  document.getElementById('pm-monthly').style.border=plan==='monthly'?'1px solid var(--accent)':'0.5px solid var(--border)';
+  document.getElementById('pm-yearly').style.border=plan==='yearly'?'1px solid var(--accent)':'0.5px solid var(--border)';
+}
+
+async function startProCheckout(){
+  try{
+    const btn=document.getElementById('proCheckoutBtn');btn.disabled=true;btn.textContent='Loading…';
+    const d=await api('/stripe/checkout',{method:'POST',body:JSON.stringify({plan:selectedProPlan})});
+    window.location.href=d.checkout_url;
+  }catch(e){showToast('⚠ Checkout failed');document.getElementById('proCheckoutBtn').disabled=false;document.getElementById('proCheckoutBtn').textContent='🏠 Start Free 7-Day Trial';}
+}
+
+(async()=>{
+  const params=new URLSearchParams(location.search);
+  if(params.get('pro')==='1')showToast('🏠 Pro activated!');
+  if(token){
+    try{const d=await api('/auth/me');showApp(d.user);}
+    catch(e){
+      if(refreshToken){
+        try{const r=await fetch(API_BASE+'/auth/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refreshToken})});if(r.ok){const d=await r.json();storeAuth(d);showApp(d.user);return;}}catch(e2){}
+      }
+      logout();
+    }
+  }
+})();
+</script>
+
+<!-- Featurebase Feedback Widget -->
+<script>
+  window.fbAsyncInit = function() {
+    Featurebase("initialize_feedback_widget", {
+      organization: "purityapps",
+      theme: "light",
+      placement: "right",
+      email: (typeof currentUser !== 'undefined' && currentUser) ? currentUser.email : null,
+      defaultTitle: "Feedback for HomeVault",
+      defaultDescription: "Please describe your bug or feature request for HomeVault.",
+      metadata: { app: "HomeVault" }
+    });
+  };
+</script>
+<script async defer src="https://do.featurebase.app/js/sdk.js" id="featurebase-sdk"></script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});</script>
+</body>
+</html>

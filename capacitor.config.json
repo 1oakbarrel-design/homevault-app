@@ -1,0 +1,11 @@
+{
+  "appId": "com.purityapps.homevault",
+  "appName": "HomeVault",
+  "webDir": "frontend",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#f97316"
+  }
+}
